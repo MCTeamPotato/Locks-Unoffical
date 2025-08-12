@@ -1,0 +1,52 @@
+{
+	"language.locks.translation_author": "<Votre nom ici>",
+
+	"itemGroup.locks": "Verrous",
+
+	"item.locks.spring": "Ressort",
+	"item.locks.wood_lock_mechanism": "Mécanisme de Verrou en Bois",
+	"item.locks.iron_lock_mechanism": "Mécanisme de Verrou en Fer",
+	"item.locks.steel_lock_mechanism": "Mécanisme de Verrou en Acier",
+	"item.locks.wood_lock": "Verrou en Bois",
+	"item.locks.iron_lock": "Verrou en Fer",
+	"item.locks.steel_lock": "Verrou en Acier",
+	"item.locks.gold_lock": "Verrou Plaqué Or",
+	"item.locks.diamond_lock": "Verrou Plaqué Diamant",
+	"item.locks.wood_lock_pick": "Crochet à Cheveux pour Verrou",
+	"item.locks.iron_lock_pick": "Crochet à Verrou en Fer",
+	"item.locks.steel_lock_pick": "Crochet à Verrou en Acier",
+	"item.locks.gold_lock_pick": "Crochet à Verrou en Or",
+	"item.locks.diamond_lock_pick": "Crochet à Verrou en Diamant",
+	"item.locks.key": "Clé",
+	"item.locks.master_key": "Passe-Partout",
+	"item.locks.key_blank": "Clé Vierges",
+	"item.locks.key_ring": "Porte-Clés",
+
+	"enchantment.locks.shocking": "Électrisant",
+	"enchantment.locks.shocking.desc": "Électrise les voleurs qui échouent à crocheter le verrou",
+	"enchantment.locks.sturdy": "Robuste",
+	"enchantment.locks.sturdy.desc": "Réduit la résistance des crochets à verrou",
+	"enchantment.locks.complexity": "Complexité",
+	"enchantment.locks.complexity.desc": "Rend le verrou trop complexe pour être crocheté avec des crochets de moindre qualité",
+
+	"death.attack.locks.shock": "%1$s a été électrocuté après avoir échoué à crocheter un verrou enchanté",
+	"death.attack.locks.shock.player": "%1$s a été électrocuté par un verrou enchanté tout en essayant de le crocheter et de combattre %2$s",
+
+	"locks.gui.lockpicking.title": "Crochetage",
+	"locks.gui.lockpicking.open": "Appuyez sur `Échap` pour ouvrir",
+
+	"locks.subtitle.key_ring": "Clés qui tintent",
+	"locks.subtitle.lock.close": "Verrou qui claque",
+	"locks.subtitle.lock.open": "Clé tournée dans le verrou",
+	"locks.subtitle.lock.rattle": "Verrou qui grince",
+	"locks.subtitle.pin.fail": "Goupille qui résonne creuse",
+	"locks.subtitle.pin.match": "Goupille qui clique légèrement",
+	"locks.subtitle.shock": "Décharge électrique soudaine",
+
+	"locks.tooltip.id": "ID : %s",
+	"locks.tooltip.length": "Longueur : %s",
+	"locks.tooltip.strength": "Résistance : %s",
+
+	"locks.status.locked": "Ce bloc est verrouillé",
+	"locks.status.too_complex": "Ce verrou est trop complexe pour ce crochet"
+}
