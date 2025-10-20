@@ -19,8 +19,10 @@ public class ServerWorldMixin {
     @Inject(at = @At("HEAD"), method = "sendBlockUpdated")
     private void sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, int flag, CallbackInfo ci) {
         if (LocksCommonConfig.matchString(oldState.getBlock()) && LocksCommonConfig.matchString(newState.getBlock())) return;
+        if (oldState.getBlock() == newState.getBlock()) return; // property-only updates (doors opening, etc.) must keep the lock intact
         ServerLevel world = (ServerLevel) (Object) this;
         ILockableHandler handler = world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+        if (handler == null) return;
         // create buffer list because otherwise we will be deleting elements while iterating (BAD!!)
         handler.getInChunk(pos).values().stream().filter(lkb -> lkb.bb.intersects(pos)).toList().forEach(lkb ->
         {
