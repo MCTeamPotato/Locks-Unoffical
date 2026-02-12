@@ -2,7 +2,7 @@
 	"parent": "item/generated",
 	"textures":
 	{
-		"layer0": "locks:item/steel_lock"
+		"layer0": "locks:item/copper_lock"
 	},
 	"overrides":
 	[
@@ -11,7 +11,7 @@
 			{
 				"locks:open": 1
 			},
-			"model": "locks:item/open_steel_lock"
+			"model": "locks:item/open_copper_lock"
 		}
 	]
 }

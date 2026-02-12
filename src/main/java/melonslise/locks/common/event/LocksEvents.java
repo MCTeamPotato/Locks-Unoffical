@@ -87,9 +87,12 @@ public final class LocksEvents
 		{
 			Lockable lkb = locked.get();
 			Item item = stack.getItem();
+			boolean hasMatchingKey = item == LocksItems.MASTER_KEY
+					|| (stack.is(LocksItemTags.KEYS) && LockingItem.getOrSetId(stack) == lkb.lock.lockRecord.id())
+					|| (item == LocksItems.KEY_RING && KeyRingItem.containsId(stack, lkb.lock.lockRecord.id()));
 			boolean f=true;
 			// FIXME erase this ugly ass hard coded shit from the face of the earth and make a proper way to do this (maybe mixin to where the right click event is fired from)
-			if(!stack.is(LocksItemTags.LOCK_PICKS) && item != LocksItems.MASTER_KEY && (!stack.is(LocksItemTags.KEYS) || LockingItem.getOrSetId(stack) != lkb.lock.lockRecord.id()) && (item != LocksItems.KEY_RING || !KeyRingItem.containsId(stack, lkb.lock.lockRecord.id())))
+			if(!stack.is(LocksItemTags.LOCK_PICKS) && !hasMatchingKey)
 			{
 				lkb.swing(20);
 				world.playSound(player, pos, LocksSoundEvents.LOCK_RATTLE, SoundSource.BLOCKS, 1f, 1f);
@@ -101,7 +104,13 @@ public final class LocksEvents
 				return InteractionResult.PASS;
 			if(world.isClientSide && LocksClientConfig.DEAF_MODE.get())
 				player.displayClientMessage(LOCKED_MESSAGE, true);
-			if(player.isShiftKeyDown()&&( item == LocksItems.MASTER_KEY || (stack.is(LocksItemTags.KEYS) && LockingItem.getOrSetId(stack) == lkb.lock.lockRecord.id()) ||(item == LocksItems.KEY_RING && KeyRingItem.containsId(stack, lkb.lock.lockRecord.id())))) {
+			if (hasMatchingKey) {
+				if (lkb.lock.isLocked()) {
+					world.playSound(player, pos, LocksSoundEvents.LOCK_OPEN, SoundSource.BLOCKS, 1f, 1f);
+					if (!world.isClientSide)
+						lkb.lock.setLocked(false);
+					return InteractionResult.CONSUME;
+				}
 				return InteractionResult.PASS;
 			}
 			if(f) {

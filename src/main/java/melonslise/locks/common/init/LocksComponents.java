@@ -1,6 +1,8 @@
 package melonslise.locks.common.init;
 
+import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.ladysnake.cca.api.v3.chunk.ChunkComponentFactoryRegistry;
 import org.ladysnake.cca.api.v3.chunk.ChunkComponentInitializer;
 import org.ladysnake.cca.api.v3.component.ComponentKey;
@@ -36,7 +38,11 @@ public class LocksComponents implements EntityComponentInitializer, WorldCompone
             ComponentRegistry.getOrCreate(ResourceLocation.fromNamespaceAndPath(Locks.ID,"selection"), ISelection.class);
 
     public static final DataComponentType<ItemHandler> ITEM_HANDLER =
-            DataComponentType.<ItemHandler>builder().persistent(ItemHandler.CODEC).networkSynchronized(ItemHandler.STREAM_CODEC).build();
+            DataComponentType.<ItemHandler>builder().persistent(ItemHandler.CODEC).build();
+
+    public static void register() {
+        Registry.register(BuiltInRegistries.DATA_COMPONENT_TYPE, ResourceLocation.fromNamespaceAndPath(Locks.ID, "item_handler"), ITEM_HANDLER);
+    }
 
     @Override
     public void registerChunkComponentFactories(ChunkComponentFactoryRegistry chunkComponentFactoryRegistry) {

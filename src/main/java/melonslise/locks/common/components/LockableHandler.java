@@ -2,6 +2,7 @@ package melonslise.locks.common.components;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import melonslise.locks.Locks;
 import melonslise.locks.common.components.interfaces.ILockableHandler;
 import melonslise.locks.common.components.interfaces.ILockableStorage;
@@ -14,6 +15,7 @@ import melonslise.locks.common.util.Lockable;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -54,7 +56,11 @@ public class LockableHandler implements ILockableHandler {
     @Override
     public Int2ObjectMap<Lockable> getInChunk(BlockPos pos)
     {
-        return this.world.hasChunkAt(pos) ? LocksComponents.LOCKABLE_STORAGE.get(this.world.getChunkAt(pos)).get(): null;
+        ChunkPos chunkPos = new ChunkPos(pos);
+        if (!this.world.hasChunk(chunkPos.x, chunkPos.z)) {
+            return Int2ObjectMaps.emptyMap();
+        }
+        return LocksComponents.LOCKABLE_STORAGE.get(this.world.getChunkAt(pos)).get();
     }
 
     @Override

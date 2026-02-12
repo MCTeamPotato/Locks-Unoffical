@@ -4,7 +4,7 @@
 	[
 		"locks:wood_lock",
 		"locks:iron_lock",
-		"locks:steel_lock",
+		"locks:copper_lock",
 		"locks:gold_lock",
 		"locks:diamond_lock"
 	]

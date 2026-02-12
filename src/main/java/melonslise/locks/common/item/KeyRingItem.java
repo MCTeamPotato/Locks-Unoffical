@@ -18,6 +18,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +28,7 @@ import java.util.stream.Collectors;
 public class KeyRingItem extends Item
 {
 	public final int rows;
+	public static final String KEY_COUNT = "KeyCount";
 
 	public KeyRingItem(int rows, Properties props)
 	{
@@ -34,17 +38,49 @@ public class KeyRingItem extends Item
 
 	public static boolean containsId(ItemStack stack, int id)
 	{
-		ItemHandler inv = stack.get(LocksComponents.ITEM_HANDLER);
+		ItemHandler inv = getOrCreateHandler(stack);
 		for(int a = 0; a < inv.getSlots(); ++a)
 			if(LockingItem.getOrSetId(inv.getStackInSlot(a)) == id)
 				return true;
 		return false;
 	}
 
+	public static ItemHandler getOrCreateHandler(ItemStack stack)
+	{
+		int rows = 1;
+		if(stack.getItem() instanceof KeyRingItem keyRingItem)
+			rows = keyRingItem.rows;
+		return getOrCreateHandler(stack, rows);
+	}
+
+	public static ItemHandler getOrCreateHandler(ItemStack stack, int rows)
+	{
+		ItemHandler inv = stack.get(LocksComponents.ITEM_HANDLER);
+		if(inv != null)
+			return inv;
+		ItemHandler created = new ItemHandler(NonNullList.withSize(rows * 9, ItemStack.EMPTY));
+		stack.set(LocksComponents.ITEM_HANDLER, created);
+		updateKeyCount(stack, created);
+		return created;
+	}
+
+	public static void updateKeyCount(ItemStack stack, IItemHandler inv)
+	{
+		int keys = 0;
+		for(int a = 0; a < inv.getSlots(); ++a)
+			if(!inv.getStackInSlot(a).isEmpty())
+				++keys;
+		final int keyCount = keys;
+		stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, comp -> comp.update(currentNbt ->
+			currentNbt.putInt(KEY_COUNT, keyCount)
+		));
+	}
+
 	@Override
 	public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand)
 	{
 		ItemStack stack = player.getItemInHand(hand);
+		getOrCreateHandler(stack, this.rows);
 		if(player instanceof ServerPlayer serverPlayer){
 			serverPlayer.openMenu(new KeyRingContainer.Provider(stack));
 		}
@@ -57,7 +93,7 @@ public class KeyRingItem extends Item
 	{
 		Level world = ctx.getLevel();
 		BlockPos pos = ctx.getClickedPos();
-		ItemHandler inv = ctx.getItemInHand().get(LocksComponents.ITEM_HANDLER);
+		ItemHandler inv = getOrCreateHandler(ctx.getItemInHand(), this.rows);
 		List<Lockable> intersect = LocksUtil.intersecting(world, pos).collect(Collectors.toList());
 		if(intersect.isEmpty())
 			return InteractionResult.PASS;

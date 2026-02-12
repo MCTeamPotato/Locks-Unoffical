@@ -2,12 +2,11 @@ package melonslise.locks.common.components;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import io.netty.buffer.ByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import melonslise.locks.common.components.interfaces.IItemHandler;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.player.Player;
@@ -21,16 +20,24 @@ public record ItemHandler(List<ItemStack> items) implements IItemHandler {
 
     public static final Codec<ItemHandler> CODEC = RecordCodecBuilder.create(itemHandlerInstance ->
             itemHandlerInstance.group(
-                    Codec.list(ItemStack.CODEC).fieldOf("items").forGetter(ItemHandler::items)
+                    Codec.list(ItemStack.OPTIONAL_CODEC).fieldOf("items").forGetter(ItemHandler::items)
             ).apply(itemHandlerInstance, ItemHandler::new)
     );
-    public static final StreamCodec<ByteBuf,ItemHandler> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.fromCodec(Codec.list(ItemStack.CODEC)),ItemHandler::items,
+    public static final StreamCodec<RegistryFriendlyByteBuf, ItemHandler> STREAM_CODEC = StreamCodec.composite(
+            ItemStack.OPTIONAL_LIST_STREAM_CODEC, ItemHandler::items,
             ItemHandler::new
     );
 
     public ItemHandler() {
         this(NonNullList.withSize(0, ItemStack.EMPTY));
+    }
+
+    public ItemHandler {
+        NonNullList<ItemStack> mutable = NonNullList.withSize(items.size(), ItemStack.EMPTY);
+        for (int i = 0; i < items.size(); i++) {
+            mutable.set(i, items.get(i));
+        }
+        items = mutable;
     }
 
     @Override
@@ -68,15 +75,13 @@ public record ItemHandler(List<ItemStack> items) implements IItemHandler {
 
     @Override
     public ItemStack removeItem(int i, int j) {
-        ItemStack itemStack = this.items.get(i);
-        itemStack.setCount(itemStack.getCount() - j);
-        return itemStack;
+        ItemStack result = ContainerHelper.removeItem(this.items, i, j);
+        return result;
     }
 
     @Override
     public ItemStack removeItemNoUpdate(int i) {
-        this.items.set(i, ItemStack.EMPTY);
-        return ItemStack.EMPTY;
+        return ContainerHelper.takeItem(this.items, i);
     }
 
     @Override

@@ -13,7 +13,7 @@ import net.minecraft.world.entity.player.Inventory;
 @Environment(EnvType.CLIENT)
 public class KeyRingScreen extends AbstractContainerScreen<KeyRingContainer>
 {
-	public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Locks.ID,"textures/gui/container/generic_54.png");
+	public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath("minecraft","textures/gui/container/generic_54.png");
 
 	public KeyRingScreen(KeyRingContainer cont, Inventory inv, Component title)
 	{

@@ -1,9 +1,11 @@
 package melonslise.locks.common.container;
 
 import melonslise.locks.common.components.interfaces.IItemHandler;
-import melonslise.locks.common.init.LocksComponents;
 import melonslise.locks.common.init.LocksContainerTypes;
+import melonslise.locks.common.init.LocksItemTags;
+import melonslise.locks.common.init.LocksItems;
 import melonslise.locks.common.init.LocksSoundEvents;
+import melonslise.locks.common.item.KeyRingItem;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
@@ -25,11 +27,13 @@ public class KeyRingContainer extends AbstractContainerMenu
 	public static class KeyRingSlot extends Slot
 	{
 		public final Player player;
+		public final ItemStack ringStack;
 
-		public KeyRingSlot(Player player, IItemHandler inv, int index, int x, int y)
+		public KeyRingSlot(Player player, IItemHandler inv, ItemStack ringStack, int index, int x, int y)
 		{
 			super(inv, index, x, y);
 			this.player = player;
+			this.ringStack = ringStack;
 		}
 
 		// TODO PITCH
@@ -37,13 +41,21 @@ public class KeyRingContainer extends AbstractContainerMenu
 		public void set(ItemStack stack)
 		{
 			super.set(stack);
+			KeyRingItem.updateKeyCount(this.ringStack, (IItemHandler) this.container);
 			if(!this.player.level().isClientSide)
 				this.player.level().playSound(null, this.player.getX(), this.player.getY(), this.player.getZ(), LocksSoundEvents.KEY_RING, SoundSource.PLAYERS, 1f, 1f);
 		}
 
 		@Override
+		public boolean mayPlace(ItemStack stack)
+		{
+			return stack.is(LocksItemTags.KEYS) || stack.is(LocksItems.MASTER_KEY);
+		}
+
+		@Override
 		public void onTake(Player player, ItemStack stack)
 		{
+			KeyRingItem.updateKeyCount(this.ringStack, (IItemHandler) this.container);
 			if(!this.player.level().isClientSide)
 				this.player.level().playSound(null, this.player.getX(), this.player.getY(), this.player.getZ(), LocksSoundEvents.KEY_RING, SoundSource.PLAYERS, 1f, 1f);
 			super.onTake(player, stack);
@@ -58,12 +70,12 @@ public class KeyRingContainer extends AbstractContainerMenu
 	{
 		super(LocksContainerTypes.KEY_RING, id);
 		this.stack = stack;
-		this.inv = stack.get(LocksComponents.ITEM_HANDLER);
+		this.inv = KeyRingItem.getOrCreateHandler(stack);
 
 		this.rows = inv.getSlots() / 9;
 		for(int row = 0; row < rows; ++row)
 			for(int col = 0; col < 9; ++col)
-				this.addSlot(new KeyRingSlot(player, inv, col + row * 9, 8 + col * 18, 18 + row * 18));
+				this.addSlot(new KeyRingSlot(player, inv, this.stack, col + row * 9, 8 + col * 18, 18 + row * 18));
 
 		int offset = (rows - 4) * 18;
 		for(int row = 0; row < 3; ++row)
@@ -100,6 +112,7 @@ public class KeyRingContainer extends AbstractContainerMenu
 			slot.set(ItemStack.EMPTY);
 		else
 			slot.setChanged();
+		KeyRingItem.updateKeyCount(this.stack, this.inv);
 		return stack;
 	}
 

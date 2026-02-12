@@ -20,6 +20,7 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.phys.AABB;
@@ -195,7 +196,8 @@ public class Lockable extends Observable implements Observer
 		List<BlockState> states = new ArrayList<>(this.bb.volume());
 		for(BlockPos pos : this.bb.getContainedPos())
 		{
-			if(!world.hasChunkAt(pos))
+			ChunkPos chunkPos = new ChunkPos(pos);
+			if(!world.hasChunk(chunkPos.x, chunkPos.z))
 				return null;
 			states.add(world.getBlockState(pos));
 		}

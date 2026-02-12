@@ -2,20 +2,20 @@
 	"type": "minecraft:crafting_shaped",
 	"pattern":
 	[
-		" SS",
-		" S ",
-		"S  "
+		" II",
+		" I ",
+		"I  "
 	],
 	"key":
 	{
-		"S":
+		"I":
 		{
-			"tag": "c:ingots/steel"
+			"item": "minecraft:copper_ingot"
 		}
 	},
 	"result":
 	{
-		"id": "locks:steel_lock_pick",
+		"id": "locks:copper_lock_pick",
 		"count": 2
 	}
 }

@@ -23,6 +23,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -72,6 +73,11 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
     protected int currPin;
 
     protected boolean frozen = true;
+    @Nullable
+    private Boolean reiOverlayVisible;
+    private boolean pendingPickClick;
+    private double clickStartX;
+    private double clickStartY;
 
     public LockPickingScreen(LockPickingContainer cont, Inventory inv, Component title) {
         super(cont, inv, title);
@@ -121,11 +127,18 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
     @Override
     protected void init() {
         super.init();
+        this.reiOverlayVisible = melonslise.locks.client.util.ReiOverlayCompat.captureAndHide();
+    }
+
+    @Override
+    public void removed() {
+        melonslise.locks.client.util.ReiOverlayCompat.restore(this.reiOverlayVisible);
+        super.removed();
     }
 
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        float pt = this.minecraft.getFrameTimeNs(); // idk why, but partialTick looks laggy AF... Use getFrameTime instead!
+        float pt = partialTick;
         int cornerX = (this.width - this.imageWidth) / 2;
         int cornerY = (this.height - this.imageHeight) / 2;
 
@@ -188,6 +201,16 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
         this.lockPick.posX = 10 - LOCK_PICK_TEX.width + Mth.clamp(this.lockPick.posX - 10 + LOCK_PICK_TEX.width, 0, (this.length - 1) * (COLUMN_TEX.width + INNER_WALL_TEX.width));
     }
 
+    protected void setPickFromMouse(double mouseX) {
+        int cornerX = (this.width - this.imageWidth) / 2;
+        float localX = (float) (mouseX - cornerX) / 2f;
+        float effectiveX = localX - FRONT_WALL_TEX.width - 1f;
+        float max = (this.length - 1) * (COLUMN_TEX.width + INNER_WALL_TEX.width);
+        effectiveX = Mth.clamp(effectiveX, 0f, max);
+        this.lockPick.posX = effectiveX + 10 - LOCK_PICK_TEX.width;
+        this.lockPick.speedX = 0;
+    }
+
     @Override
     public boolean keyPressed(int key, int scan, int modifier) {
         if (this.frozen)
@@ -209,6 +232,54 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
         if (key == this.minecraft.options.keyLeft.key.getValue() || key == this.minecraft.options.keyRight.key.getValue())
             this.lockPick.speedX = 0;
         return super.keyReleased(key, scan, modifier);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.frozen)
+            return super.mouseClicked(mouseX, mouseY, button);
+        if (button == 0) {
+            this.pendingPickClick = true;
+            this.clickStartX = mouseX;
+            this.clickStartY = mouseY;
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        if (!this.frozen)
+            this.setPickFromMouse(mouseX);
+        super.mouseMoved(mouseX, mouseY);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (this.frozen)
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        if (button == 0) {
+            double dx = mouseX - this.clickStartX;
+            double dy = mouseY - this.clickStartY;
+            if (this.pendingPickClick && (dx * dx + dy * dy) > 9d)
+                this.pendingPickClick = false;
+            this.setPickFromMouse(mouseX);
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (this.frozen)
+            return super.mouseReleased(mouseX, mouseY, button);
+        if (button == 0) {
+            if (this.pendingPickClick && !this.lockPick.isExecuting() && this.pullPin(this.getSelectedPin()))
+                this.lockPick.execute(MoveAction.at(0f, -2.5f).time(3), MoveAction.at(0f, 2.5f).time(3));
+            this.pendingPickClick = false;
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     protected int getSelectedPin() {

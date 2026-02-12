@@ -23,6 +23,13 @@ repositories {
 }
 
 loom{
+    runs {
+        client {
+            // Existing defaults are fine; just add program args
+            programArg "--username"
+            programArg "Tester"
+        }
+    }
 
 	accessWidenerPath = file("src/main/resources/locks.accesswidener")
 

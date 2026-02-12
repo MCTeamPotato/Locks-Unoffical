@@ -3,7 +3,7 @@
 	"pattern":
 	[
 		"SSS",
-		"NNN",
+		"III",
 		"III"
 	],
 	"key":
@@ -12,17 +12,13 @@
 		{
 			"item": "locks:spring"
 		},
-		"N":
-		{
-			"tag": "c:nuggets/steel"
-		},
 		"I":
 		{
-			"tag": "c:ingots/steel"
+			"item": "minecraft:copper_ingot"
 		}
 	},
 	"result":
 	{
-		"id": "locks:steel_lock_mechanism"
+		"id": "locks:copper_lock_mechanism"
 	}
 }

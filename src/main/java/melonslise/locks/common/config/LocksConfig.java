@@ -55,11 +55,11 @@ public final class LocksConfig {
         GENERATED_LOCKS = cfg
                 .comment("Items that can be generated as locks (must be instance of LockItem in code!)")
                 .comment("可以作为锁生成的物品（在代码中必须是 LockItem 的实例！）")
-                .defineList("Generated Locks", Lists.newArrayList("locks:wood_lock", "locks:iron_lock", "locks:steel_lock", "locks:gold_lock", "locks:diamond_lock"), e -> e instanceof String);
+                .defineList("Generated Locks", Lists.newArrayList("locks:wood_lock", "locks:copper_lock", "locks:gold_lock", "locks:iron_lock", "locks:diamond_lock"), e -> e instanceof String);
         GENERATED_LOCK_WEIGHTS = cfg
                 .comment("WARNING: THE AMOUNT OF NUMBERS SHOULD BE EQUAL TO THE AMOUNT OF GENERATED LOCK ITEMS!!!", "The relative probability that the corresponding lock item will be generated on a chest. Higher number = higher chance to generate")
                 .comment("警告：数字的数量应与生成的锁数量相等！！！", "对应锁物品生成在箱子上的相对概率。数字越大，生成的机会越高。")
-                .defineList("Generated Lock Chances", Lists.newArrayList(5, 4, 2, 3, 1), e -> e instanceof Integer);
+                .defineList("Generated Lock Chances", Lists.newArrayList(5, 2, 3, 4, 1), e -> e instanceof Integer);
         RANDOMIZE_LOADED_LOCKS = cfg
                 .comment("Randomize lock IDs and combinations when loading them from a structure file. Randomization works just like during world generation")
                 .comment("从结构文件加载锁ID和组合时进行随机化。随机化的方式与世界生成时相同。")

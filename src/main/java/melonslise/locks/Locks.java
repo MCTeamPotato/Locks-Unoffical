@@ -22,6 +22,7 @@ public final class Locks implements ModInitializer
 		//EnumModifier.run();
 		//TODO: run the EnumModifier class to add enchantments to the game
 
+		LocksComponents.register();
 		LocksItems.register();
 		LocksEnchantments.register();
 		LocksSoundEvents.register();
