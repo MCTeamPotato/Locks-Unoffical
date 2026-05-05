@@ -18,6 +18,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
 
+/*
+    Adds lockable to a chunk.
+ */
 public class AddLockableToChunkPacket implements FabricPacket {
     public static final ResourceLocation ID = new ResourceLocation(Locks.ID, "add_lockable2chunk");
     private final Lockable lockable;
@@ -25,11 +28,17 @@ public class AddLockableToChunkPacket implements FabricPacket {
 
     public static final PacketType<AddLockableToChunkPacket> TYPE = PacketType.create(ID, AddLockableToChunkPacket::new);
 
-    public static class Handler implements ClientPlayNetworking.PlayPacketHandler<AddLockableToChunkPacket>{
+    //  Generates a lock into a chunk.
+    public static class Handler implements ClientPlayNetworking.PlayPacketHandler<AddLockableToChunkPacket>
+    {
         @Override
-        public void receive(AddLockableToChunkPacket pkt, LocalPlayer localPlayer, PacketSender packetSender) {
+        public void receive(AddLockableToChunkPacket pkt, LocalPlayer localPlayer, PacketSender packetSender)
+        {
             Level level = localPlayer.level();
+
             if(level.getChunk(pkt.x, pkt.z) instanceof EmptyLevelChunk) return;
+
+            //  Gets storage units within the chunk.
             ILockableStorage st = LocksComponents.LOCKABLE_STORAGE.get(level.getChunk(pkt.x, pkt.z));
             ILockableHandler handler = LocksComponents.LOCKABLE_HANDLER.get(level);
             Int2ObjectMap<Lockable> lkbs = handler.getLoaded();

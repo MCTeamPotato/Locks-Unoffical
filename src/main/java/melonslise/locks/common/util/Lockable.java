@@ -1,7 +1,9 @@
 package melonslise.locks.common.util;
 
+import melonslise.locks.Locks;
 import melonslise.locks.common.init.LocksComponents;
 import melonslise.locks.common.item.LockItem;
+import melonslise.locks.common.item.SmartLockItem;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -20,15 +22,18 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.*;
 
+/*
+	A lock lolololololololololol.
+ */
 public class Lockable extends Observable implements Observer
 {
 	public static class State
 	{
 		public static final AABB
-			VERT_Z_BB = new AABB(-2d / 16d, -3d / 16d, 0.5d / 16d, 2d / 16d, 3d / 16d, 0.5d / 16d),
-			VERT_X_BB = LocksUtil.rotateY(VERT_Z_BB),
-			HOR_Z_BB = LocksUtil.rotateX(VERT_Z_BB),
-			HOR_X_BB = LocksUtil.rotateY(HOR_Z_BB);
+				VERT_Z_BB = new AABB(-2d / 16d, -3d / 16d, 2d / 16d, 2d / 16d, 3d / 16d, 2d / 16d),
+				VERT_X_BB = LocksUtil.rotateY(VERT_Z_BB),
+				HOR_Z_BB = LocksUtil.rotateX(VERT_Z_BB),
+				HOR_X_BB = LocksUtil.rotateY(HOR_Z_BB);
 
 		public static AABB getBounds(Transform tr)
 		{
@@ -70,7 +75,8 @@ public class Lockable extends Observable implements Observer
 
 	public final Cuboid6i bb;
 	public final Lock lock;
-	public final Transform tr;
+	//Attempts to not crash if it is null.
+	public Transform tr = Transform.NORTH_UP;
 	public final ItemStack stack;
 	public final int id;
 
@@ -83,6 +89,15 @@ public class Lockable extends Observable implements Observer
 		this(bb, lock, tr, stack, LocksComponents.LOCKABLE_HANDLER.get(world).nextId());
 	}
 
+	/**
+	 Creates a lock
+
+	 @param bb 	 - Location of the lock.
+	 @param lock - You wont believe me...
+	 @param tr	 - Enumerator that dictates direction lock is facing
+	 @param stack - In hand item
+	 @param id - Lock combination id.
+	 */
 	public Lockable(Cuboid6i bb, Lock lock, Transform tr, ItemStack stack, int id)
 	{
 		this.bb = bb;
@@ -90,6 +105,8 @@ public class Lockable extends Observable implements Observer
 		this.tr = tr;
 		this.stack = stack;
 		this.id = id;
+
+		this.checkIntegrity(this);
 		lock.addObserver(this);
 	}
 
@@ -100,15 +117,41 @@ public class Lockable extends Observable implements Observer
 		return new Lockable(Cuboid6i.fromNbt(nbt.getCompound(KEY_BB)), Lock.fromNbt(nbt.getCompound(KEY_LOCK)), Transform.values()[(int) nbt.getByte(KEY_TRANSFORM)], ItemStack.of(nbt.getCompound(KEY_STACK)), nbt.getInt(KEY_ID));
 	}
 
+	/**
+	 BIGGGG
+	 Shit
+	 */
 	public static CompoundTag toNbt(Lockable lkb)
 	{
 		CompoundTag nbt = new CompoundTag();
 		nbt.put(KEY_BB, Cuboid6i.toNbt(lkb.bb));
 		nbt.put(KEY_LOCK, Lock.toNbt(lkb.lock));
-		nbt.putByte(KEY_TRANSFORM, (byte) lkb.tr.ordinal());
+
+
+		if (lkb.tr == null) {
+			Locks.LOGGER.warn("Transform is null for Lockable?");
+			lkb.tr = Transform.NORTH_UP;
+		}
+		nbt.putByte(KEY_TRANSFORM, (byte) (lkb.tr != null ? lkb.tr.ordinal() : Transform.NORTH_MID.ordinal()));
+		//nbt.putByte(KEY_TRANSFORM, (byte) lkb.tr.ordinal());
 		nbt.put(KEY_STACK, lkb.stack.save(new CompoundTag()));
 		nbt.putInt(KEY_ID, lkb.id);
 		return nbt;
+	}
+
+	/**
+	 * Returns true if the lock is a smart lock
+	 *
+	 * @return - Returns true if the lock is a smart lock
+	 */
+	public boolean isSmart()
+	{
+		return this.stack.getItem() instanceof SmartLockItem;
+	}
+
+
+	public static void nullTransfer(Lockable lkb) {
+
 	}
 
 	public static int idFromNbt(CompoundTag nbt)
@@ -116,18 +159,53 @@ public class Lockable extends Observable implements Observer
 		return nbt.getInt(KEY_ID);
 	}
 
+
+	/**
+	 Reads the data back from the network buffer into this object.
+	 */
 	public static Lockable fromBuf(FriendlyByteBuf buf)
 	{
 		return new Lockable(Cuboid6i.fromBuf(buf), Lock.fromBuf(buf), buf.readEnum(Transform.class), buf.readItem(), buf.readInt());
 	}
 
+	/**
+	 Sends this object’s data over the network (like from server to client). Minecraft uses PacketByteBuf for custom packet data.
+
+	 @param buf - big boy buffer
+	 @param lkb - the lock
+	 */
 	public static void toBuf(FriendlyByteBuf buf, Lockable lkb)
 	{
+		lkb = checkIntegrity(lkb);
 		Cuboid6i.toBuf(buf, lkb.bb);
 		Lock.toBuf(buf, lkb.lock);
-		buf.writeEnum(lkb.tr);
+
+		buf.writeEnum(lkb.tr != null ? lkb.tr : Transform.NORTH_MID);
+		//buf.writeEnum(lkb.tr);
 		buf.writeItem(lkb.stack);
 		buf.writeInt(lkb.id);
+	}
+
+	/**
+	 * Checks if the values of the lock a NOT null. If null, then it sets a default value.
+	 *
+	 * @param lkb - The lock lol.
+	 * @return
+	 */
+	private static Lockable checkIntegrity(Lockable lkb)
+	{
+		if (lkb.tr == null)
+		{
+			Locks.LOGGER.warn("Transform was null for Lockable");
+			/*Locks.LOGGER.warn("BB (Block location is " + lkb.bb);
+			Locks.LOGGER.warn("Id is " + lkb.id);
+			Locks.LOGGER.warn("Stack (Type of lock and amount) is " + lkb.stack);*/
+			lkb.tr = Transform.NORTH_UP;
+
+			//Locks.LOGGER.warn("\n\n\n --------------------------");
+		}
+
+		return lkb;
 	}
 
 	@Override

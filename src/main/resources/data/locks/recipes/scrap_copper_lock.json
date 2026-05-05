@@ -1,0 +1,12 @@
+{
+	"type": "minecraft:crafting_shapeless",
+	"ingredients": [
+	{
+		"item": "locks:copper_lock"
+	}],
+	"result":
+	{
+		"item": "minecraft:copper_ingot",
+		"count": 1
+	}
+}

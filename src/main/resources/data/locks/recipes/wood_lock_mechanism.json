@@ -10,7 +10,7 @@
 	{
 		"S":
 		{
-			"tag": "c:string"
+			"item": "minecraft:string"
 		},
 		"T":
 		{

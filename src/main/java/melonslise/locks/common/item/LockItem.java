@@ -50,6 +50,7 @@ public class LockItem extends LockingItem
 	}
 
 	public static final String KEY_OPEN = "Open";
+	public static final String KEY_LENGTH = "Length";
 
 	public static boolean isOpen(ItemStack stack)
 	{
@@ -60,8 +61,6 @@ public class LockItem extends LockingItem
 	{
 		stack.getOrCreateTag().putBoolean(KEY_OPEN, open);
 	}
-
-	public static final String KEY_LENGTH = "Length";
 
 	// WARNING: EXPECTS LOCKITEM STACK
 	public static byte getOrSetLength(ItemStack stack)

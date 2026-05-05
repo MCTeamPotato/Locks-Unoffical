@@ -49,9 +49,16 @@ public class LockPickItem extends Item
 		return nbt.getFloat(KEY_STRENGTH);
 	}
 
+	/**
+	 *	Verifies if the lockpick is able to bypass the complexity due to its strength.
+	 *
+	 * @param stack - The lock pick
+	 * @param cmp - The enchantment level of complexity within the lock
+	 * @return - Whether it can lock pick or not
+	 */
 	public static boolean canPick(ItemStack stack, int cmp)
 	{
-		return getOrSetStrength(stack) > cmp * 0.25f;
+		return (getOrSetStrength(stack) > cmp * 0.25f);
 	}
 
 	public static boolean canPick(ItemStack stack, Lockable lkb)
@@ -59,29 +66,38 @@ public class LockPickItem extends Item
 		return canPick(stack, EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.COMPLEXITY, lkb.stack));
 	}
 
+	/**
+	 * Should start lock picking if a lock is found.
+	 *
+	 * @param ctx - Context to the action done by the player
+	 * @return - Consequences from the action
+	 */
 	@Override
 	public InteractionResult useOn(UseOnContext ctx)
 	{
+		//Defines player, world, position of interacted block, and a list of possible locks interacted with.
 		Level world = ctx.getLevel();
 		Player player = ctx.getPlayer();
 		BlockPos pos = ctx.getClickedPos();
 		List<Lockable> match = LocksUtil.intersecting(world, pos).filter(LocksPredicates.LOCKED).collect(Collectors.toList());
-		if(match.isEmpty())
+
+		//If no locks are in the matching position or if it is a smart lock, it ignores. Otherwise it verifies if the lock has the complexity enchantment and carries out its effect.
+		if(match.isEmpty() || match.get(0).isSmart())
 			return InteractionResult.PASS;
 		Lockable lkb = match.get(0);
 		if(!canPick(ctx.getItemInHand(), lkb))
 		{
-			if(world.isClientSide)
-				player.displayClientMessage(TOO_COMPLEX_MESSAGE, true);
+			Locks.LOGGER.warn(!canPick(ctx.getItemInHand(), lkb));
+			if(world.isClientSide) player.displayClientMessage(TOO_COMPLEX_MESSAGE, true);
 			return InteractionResult.PASS;
 		}
-		if(world.isClientSide)
-			return InteractionResult.SUCCESS;
+		if(world.isClientSide) return InteractionResult.SUCCESS;
+
+		//It opens the lock picking minigame.
 		InteractionHand hand = ctx.getHand();
-		if(player instanceof ServerPlayer) {
+		if(player instanceof ServerPlayer && !match.get(0).isSmart()) {
 			player.openMenu(new LockPickingContainer.Provider(hand, lkb));
 		}
-		//NetworkHooks.openScreen((ServerPlayer) player, new LockPickingContainer.Provider(hand, lkb), new LockPickingContainer.Writer(hand, lkb));
 		return InteractionResult.SUCCESS;
 	}
 

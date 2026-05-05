@@ -1,0 +1,21 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"pattern":
+	[
+		" WW",
+		" W ",
+		"W  "
+	],
+	"key":
+	{
+		"W":
+		{
+			"tag": "minecraft:copper_ingot"
+		}
+	},
+	"result":
+	{
+		"item": "locks:copper_lock_pick",
+		"count": 3
+	}
+}

@@ -6,24 +6,25 @@
 	},
 	"overrides":
 	[
+
 		{
 			"predicate":
 			{
-				"locks:keys": 0.1
+				"locks:key_count": 0.33
 			},
 			"model": "locks:item/key_ring_1"
 		},
 		{
 			"predicate":
 			{
-				"locks:keys": 0.21
+				"locks:key_count": 0.66
 			},
 			"model": "locks:item/key_ring_2"
 		},
 		{
 			"predicate":
 			{
-				"locks:keys": 0.32
+				"locks:key_count": 1
 			},
 			"model": "locks:item/key_ring_3"
 		}

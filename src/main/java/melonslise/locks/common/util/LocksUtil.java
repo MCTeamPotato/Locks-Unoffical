@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -30,6 +31,7 @@ import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
@@ -106,23 +108,6 @@ public final class LocksUtil {
         return new Vec3((bb.minX + bb.maxX + (bb.maxX - bb.minX) * dir.getX()) * 0.5d, (bb.minY + bb.maxY + (bb.maxY - bb.minY) * dir.getY()) * 0.5d, (bb.minZ + bb.maxZ + (bb.maxZ - bb.minZ) * dir.getZ()) * 0.5d);
     }
 
-    //   public static LootTable lootTableFrom(ResourceLocation loc) throws IOException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    // JsonElement json = GsonHelper.fromJson(LootTableManager.GSON, new BufferedReader(new InputStreamReader(resourceManager.getResource(loc).getInputStream(), StandardCharsets.UTF_8)), JsonElement.class);
-
-//        JsonElement json = GsonHelper.fromJson(LootDataType.TABLE.parser(), new BufferedReader(new InputStreamReader(resourceManager.getResource(loc).orElseThrow().open(), StandardCharsets.UTF_8)), JsonElement.class);
-//        Deque que = ForgeHooksAccessor.getLootContext().get();
-//        Object lootCtx = lootTableContextConstructor.newInstance(loc, false);
-//        try {
-//            que.push(lootCtx);
-//            return LootDataType.TABLE.parser().fromJson(json, LootTable.class);
-//        } catch (JsonSyntaxException e) {
-//            throw e;
-//        } finally // Still executes even if catch throws according to SO!
-//        {
-//            que.pop();
-//        }
-    //   }
-
     // Only merges entries, not conditions and functions
     public static LootTable mergeEntries(LootTable table, LootTable inject) {
         List<LootPool> list = Arrays.asList(((LootTableAccessor) table).getPools());
@@ -154,13 +139,17 @@ public final class LocksUtil {
         return intersecting(world, pos).anyMatch(LocksPredicates.LOCKED);
     }
 
-    // TODO: 方块遮挡判断
-    public static Lockable lockWhenGen(LevelAccessor levelAccessor, ServerLevel level, BlockPos blockPos, RandomSource randomSource) {
+    // ── Lock geometry resolver ────────────────────────────────────────────────
+    //
+    // Used by both lockWhenGen overloads. Resolves the final BlockPos and
+    // Direction for a lockable block. Returns null if the block is not lockable.
+    // Returns Object[]{ BlockPos pos1, Direction dir } on success.
+
+    private static Object[] resolveGeometry(LevelAccessor levelAccessor, BlockPos blockPos) {
         BlockState state = levelAccessor.getBlockState(blockPos);
-        Block block = state.getBlock();
-        if (!LocksConfig.canGen(randomSource, block)) return null;
         BlockPos pos1 = blockPos;
         Direction dir = null;
+
         if (state.hasProperty(FACING)) {
             dir = state.getValue(FACING);
         } else if (state.hasProperty(HORIZONTAL_FACING)) {
@@ -172,50 +161,146 @@ public final class LocksUtil {
         if (state.hasProperty(CHEST_TYPE)) {
             switch (state.getValue(CHEST_TYPE)) {
                 case LEFT -> pos1 = blockPos.relative(ChestBlock.getConnectedDirection(state));
-                case RIGHT -> {
-                    return null;
-                }
+                case RIGHT -> { return null; }
             }
         }
+
         if (state.hasProperty(DOUBLE_BLOCK_HALF)) {
             if (state.getValue(DOUBLE_BLOCK_HALF) == LOWER) return null;
             pos1 = blockPos.below();
             if (state.hasProperty(DOOR_HINGE)) {
                 if (state.hasProperty(DOOR_HINGE) && state.hasProperty(HORIZONTAL_FACING)) {
-                    BlockPos pos2 = pos1.relative(state.getValue(DOOR_HINGE) == LEFT ? dir.getClockWise() : dir.getCounterClockWise());
+                    BlockPos pos2 = pos1.relative(state.getValue(DOOR_HINGE) == LEFT
+                            ? dir.getClockWise() : dir.getCounterClockWise());
                     if (levelAccessor.getBlockState(pos2).is(state.getBlock())) {
-                        if (state.getValue(DOOR_HINGE) == LEFT) {
-                            return null;
-                        }
+                        if (state.getValue(DOOR_HINGE) == LEFT) return null;
                         pos1 = pos2;
                     }
                 }
                 dir = dir.getOpposite();
             }
         }
-        Cuboid6i bb = new Cuboid6i(blockPos, pos1);
-        ItemStack stack = LocksConfig.getRandomLock(randomSource);
-        Lock lock = Lock.from(stack);
-        Transform tr = Transform.fromDirection(dir, dir);
+
+        return new Object[]{ pos1, dir };
+    }
+
+    // ── lockWhenGen ───────────────────────────────────────────────────────────
+
+    /**
+     * Loot-table-aware lock generation.
+     *
+     * LocksConfig.rollLock() handles the full fallback chain:
+     *   specific table entry -> "default" entry -> global pool
+     */
+    public static Lockable lockWhenGen(LevelAccessor levelAccessor, ServerLevel level,
+                                       BlockPos blockPos, RandomSource randomSource,
+                                       ResourceLocation lootTableId) {
+        BlockState state = levelAccessor.getBlockState(blockPos);
+        Block block = state.getBlock();
+        if (!LocksConfig.matchString(block))
+        {
+            //Locks.LOGGER.info("[LocksUtil] Block '{}' was not in the config list", block);
+            return null;
+        }
+
+        //Locks.LOGGER.info("[LocksUtil] Generating geo");
+        Object[] geo = resolveGeometry(levelAccessor, blockPos);
+        if (geo == null) return null;
+        BlockPos  pos1 = (BlockPos)  geo[0];
+        Direction dir  = (Direction) geo[1];
+
+        //Locks.LOGGER.info("[LocksUtil] Generating stack");
+        ItemStack stack = LocksConfig.rollLock(randomSource, lootTableId);
+        if (stack == null)
+        {
+            //Locks.LOGGER.info("[LocksUtil] Not generating lock! lockWhenGen stack=null at {} for {}", blockPos, lootTableId);
+            return null;
+        }
+
+        //Locks.LOGGER.info("[LocksUtil] Generating lockable");
+        Cuboid6i  bb   = new Cuboid6i(blockPos, pos1);
+        Lock      lock = Lock.from(stack);
+        Transform tr   = Transform.fromDirection(dir, dir);
         return new Lockable(bb, lock, tr, stack, level);
     }
 
-    public static Lockable lockCheck(LevelAccessor levelAccessor, ServerLevel level, BlockPos blockPos, RandomSource randomSource) {
-        if (levelAccessor.hasChunk(blockPos.getX() >> 4, blockPos.getZ() >> 4)){
-            return lockWhenGen(levelAccessor, level, blockPos, randomSource);
-        }
-        return null;
+    /**
+     * No-loot-table version. Used by WorldGenRegionMixin for feature-placed
+     * chests. Passes null to rollLock() so it hits the "default" entry in
+     * locks-generation.toml rather than reading GENERATED_LOCKS directly.
+     */
+    public static Lockable lockWhenGen(LevelAccessor levelAccessor, ServerLevel level,
+                                       BlockPos blockPos, RandomSource randomSource) {
+        BlockState state = levelAccessor.getBlockState(blockPos);
+        Block block = state.getBlock();
+        if (!LocksConfig.matchString(block)) return null;
+
+        Object[] geo = resolveGeometry(levelAccessor, blockPos);
+        /*Locks.LOGGER.info("[LocksUtil] lockWhenGen pos={} block={} geo={}", blockPos,
+                BuiltInRegistries.BLOCK.getKey(block), geo == null ? "NULL" : "OK");*/
+        if (geo == null) return null;
+        BlockPos  pos1 = (BlockPos)  geo[0];
+        Direction dir  = (Direction) geo[1];
+
+        // Pass null — rollLock will use "default" entry, then global fallback
+        //Locks.LOGGER.info("[LocksUtil] Generating stack");
+        ItemStack stack = LocksConfig.rollLock(randomSource, null);
+        if (stack == null) return null;
+
+        //Locks.LOGGER.info("[LocksUtil] Returning lockable");
+        Cuboid6i  bb   = new Cuboid6i(blockPos, pos1);
+        Lock      lock = Lock.from(stack);
+        Transform tr   = Transform.fromDirection(dir, dir);
+        return new Lockable(bb, lock, tr, stack, level);
     }
 
-    public static boolean lockChunk(LevelAccessor levelAccessor, ServerLevel level, BlockPos blockPos, RandomSource randomSource, ChunkAccess chunkAccess){
-        Lockable lkb = LocksUtil.lockCheck(levelAccessor, level, blockPos, randomSource);
+    // ── lockCheck ─────────────────────────────────────────────────────────────
+
+    public static Lockable lockCheck(LevelAccessor levelAccessor, ServerLevel level,
+                                     BlockPos blockPos, RandomSource randomSource,
+                                     ResourceLocation lootTableId) {
+        if (!levelAccessor.hasChunk(blockPos.getX() >> 4, blockPos.getZ() >> 4)) return null;
+        return lockWhenGen(levelAccessor, level, blockPos, randomSource, lootTableId);
+    }
+
+    public static Lockable lockCheck(LevelAccessor levelAccessor, ServerLevel level,
+                                     BlockPos blockPos, RandomSource randomSource) {
+        if (!levelAccessor.hasChunk(blockPos.getX() >> 4, blockPos.getZ() >> 4)) return null;
+        return lockWhenGen(levelAccessor, level, blockPos, randomSource);
+    }
+
+    // ── lockChunk ─────────────────────────────────────────────────────────────
+
+    /**
+     * Loot-table-aware version. Called by BlockEntityMixin.
+     * Adds the lock to whichever chunks the lockable's bounding box spans.
+     */
+    public static boolean lockChunk(LevelAccessor levelAccessor, ServerLevel level,
+                                    BlockPos blockPos, RandomSource randomSource,
+                                    ResourceLocation lootTableId) {
+        Lockable lkb = lockCheck(levelAccessor, level, blockPos, randomSource, lootTableId);
+        if (lkb == null) return false;
+        lkb.bb.getContainedChunks((x, z) -> {
+            ((ILockableProvider) levelAccessor.getChunk(x, z)).getLockables().add(lkb);
+            return true;
+        });
+        return true;
+    }
+
+    /** Called by WorldGenRegionMixin — no loot table context, uses global fallback. */
+    public static boolean lockChunk(LevelAccessor levelAccessor, ServerLevel level,
+                                    BlockPos blockPos, RandomSource randomSource,
+                                    ChunkAccess chunkAccess) {
+        Lockable lkb = lockCheck(levelAccessor, level, blockPos, randomSource);
         if (lkb == null) return false;
         ((ILockableProvider) chunkAccess).getLockables().add(lkb);
         return true;
     }
 
-    public static boolean lockChunk(LevelAccessor levelAccessor, ServerLevel level, BlockPos blockPos, RandomSource randomSource){
-        Lockable lkb = LocksUtil.lockCheck(levelAccessor, level, blockPos, randomSource);
+    /** No-ChunkAccess variant — used by StructurePieceMixin and other callers. */
+    public static boolean lockChunk(LevelAccessor levelAccessor, ServerLevel level,
+                                    BlockPos blockPos, RandomSource randomSource) {
+        Lockable lkb = lockCheck(levelAccessor, level, blockPos, randomSource);
         if (lkb == null) return false;
         lkb.bb.getContainedChunks((x, z) -> {
             ((ILockableProvider) levelAccessor.getChunk(x, z)).getLockables().add(lkb);

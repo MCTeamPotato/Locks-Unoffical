@@ -2,6 +2,7 @@ package melonslise.locks.common.util;
 
 import melonslise.locks.common.item.LockItem;
 import melonslise.locks.common.item.LockingItem;
+import melonslise.locks.common.item.SmartLockItem;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
@@ -30,7 +31,11 @@ public class Lock extends Observable
 
 	public static Lock from(ItemStack stack)
 	{
-		return new Lock(LockingItem.getOrSetId(stack), LockItem.getOrSetLength(stack), !LockItem.isOpen(stack));
+		if(LockingItem.isSmart(stack)) {
+			return new Lock(LockingItem.getOrSetId(stack), 64, !SmartLockItem.isOpen(stack));
+		} else {
+			return new Lock(LockingItem.getOrSetId(stack), LockItem.getOrSetLength(stack), !LockItem.isOpen(stack));
+		}
 	}
 
 	public static final String KEY_ID = "Id", KEY_LENGTH = "Length", KEY_LOCKED = "Locked";

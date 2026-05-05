@@ -1,0 +1,12 @@
+{
+	"type": "minecraft:crafting_shapeless",
+	"ingredients":[
+	{
+		"item": "locks:diamond_lock"
+	}],
+	"result":
+	{
+		"item": "locks:diamond_lock_fragments",
+		"count": 1
+	}
+}

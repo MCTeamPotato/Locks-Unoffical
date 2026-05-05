@@ -31,6 +31,8 @@ public class LockingItem extends Item
 		return to;
 	}
 
+	public static boolean isSmart(ItemStack stack) { return stack.getItem() instanceof SmartLockItem;}
+
 	public static int getOrSetId(ItemStack stack)
 	{
 		CompoundTag nbt = stack.getOrCreateTag();

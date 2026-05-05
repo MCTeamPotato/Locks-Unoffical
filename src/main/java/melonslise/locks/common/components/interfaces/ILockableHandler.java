@@ -10,7 +10,7 @@ import net.minecraft.world.level.Level;
 import java.util.Observer;
 
 
-public interface ILockableHandler extends  Observer , Component, AutoSyncedComponent {
+    public interface ILockableHandler extends  Observer , Component, AutoSyncedComponent {
     int nextId();
 
     Int2ObjectMap<Lockable> getLoaded();
@@ -20,4 +20,5 @@ public interface ILockableHandler extends  Observer , Component, AutoSyncedCompo
     boolean add(Lockable lkb, Level level);
 
     boolean remove(int id);
+
 }

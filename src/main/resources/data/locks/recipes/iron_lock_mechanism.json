@@ -14,11 +14,11 @@
 		},
 		"N":
 		{
-			"tag": "c:nuggets/iron"
+			"item": "minecraft:iron_nugget"
 		},
 		"I":
 		{
-			"tag": "c:ingots/iron"
+			"tag": "c:iron_ingots"
 		}
 	},
 	"result":

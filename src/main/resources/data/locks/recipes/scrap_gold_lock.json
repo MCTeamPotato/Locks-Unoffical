@@ -1,0 +1,12 @@
+{
+	"type": "minecraft:crafting_shapeless",
+	"ingredients":[
+	{
+		"item": "locks:gold_lock"
+	}],
+	"result":
+	{
+		"item": "minecraft:gold_nugget",
+		"count": 8
+	}
+}

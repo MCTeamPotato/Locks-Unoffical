@@ -1,0 +1,32 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"pattern":
+	[
+		"NNN",
+		"KRL",
+		"NNN"
+	],
+	"key":
+	{
+		"N":
+		{
+			"item": "minecraft:iron_nugget"
+		},
+		"L":
+		{
+			"item": "minecraft:observer"
+		},
+		"R":
+		{
+			"item": "minecraft:redstone"
+		},
+		"K":
+		{
+			"item": "locks:key_blank"
+		}
+	},
+	"result":
+	{
+		"item": "locks:integrated_circuit"
+	}
+}

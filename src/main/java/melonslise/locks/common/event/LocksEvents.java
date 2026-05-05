@@ -1,6 +1,8 @@
 package melonslise.locks.common.event;
 
+import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
 import melonslise.locks.Locks;
+import melonslise.locks.common.components.LockableHandler;
 import melonslise.locks.common.components.interfaces.ILockableHandler;
 import melonslise.locks.common.config.LocksClientConfig;
 import melonslise.locks.common.config.LocksServerConfig;
@@ -11,6 +13,7 @@ import melonslise.locks.common.init.LocksItems;
 import melonslise.locks.common.init.LocksSoundEvents;
 import melonslise.locks.common.item.KeyRingItem;
 import melonslise.locks.common.item.LockingItem;
+import melonslise.locks.common.item.SmartLockItem;
 import melonslise.locks.common.util.Lockable;
 import melonslise.locks.common.util.LocksPredicates;
 import melonslise.locks.common.util.LocksUtil;
@@ -21,6 +24,7 @@ import net.fabricmc.fabric.api.loot.v2.LootTableSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.sounds.SoundEvents;
@@ -38,6 +42,7 @@ import net.minecraft.world.level.storage.loot.LootDataManager;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.level.chunk.LevelChunk;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -68,46 +73,74 @@ public final class LocksEvents
 
 	public static InteractionResult onRightClick(Player player, Level world, InteractionHand hand, BlockHitResult result)
 	{
-
+		//Gets the lock being interacted with and the handler
 		BlockPos pos = result.getBlockPos();
 		ILockableHandler handler = LocksComponents.LOCKABLE_HANDLER.get(world);
-		Lockable[] intersect = handler.getInChunk(pos).values().stream().filter(lkb -> lkb.bb.intersects(pos)).toArray(Lockable[]::new);
-		if(intersect.length == 0)
-			return InteractionResult.PASS;
-		if(hand != InteractionHand.MAIN_HAND) // FIXME Better way to prevent firing multiple times
-		{
-			return InteractionResult.FAIL;
-		}
+		Lockable[] intersect = handler.getInChunk(pos).values().stream()
+				.filter(lkb -> lkb.bb.intersects(pos))
+				.toArray(Lockable[]::new);
+
+		//
+		if(intersect.length == 0) return InteractionResult.PASS;
+		if(hand != InteractionHand.MAIN_HAND) return InteractionResult.FAIL; // FIXME Better way to prevent firing multiple times
+
+		//Gets the item in hand and the
 		ItemStack stack = player.getItemInHand(hand);
-		Optional<Lockable> locked = Arrays.stream(intersect).filter(LocksPredicates.LOCKED).findFirst();
+		Optional<Lockable> locked = Arrays.stream(intersect)
+				.filter(LocksPredicates.LOCKED)
+				.findFirst();
+
 		if(locked.isPresent())
 		{
+			//The locked being interacted with and the item in hand.
 			Lockable lkb = locked.get();
 			Item item = stack.getItem();
-			boolean f=true;
+
+			if(lkb.isSmart()) SmartLockItem.getOrSetOwner(stack, player).equals(player.getUUID());
+
 			// FIXME erase this ugly ass hard coded shit from the face of the earth and make a proper way to do this (maybe mixin to where the right click event is fired from)
-			if(!stack.is(LocksItemTags.LOCK_PICKS) && item != LocksItems.MASTER_KEY && (!stack.is(LocksItemTags.KEYS) || LockingItem.getOrSetId(stack) != lkb.lock.id) && (item != LocksItems.KEY_RING || !KeyRingItem.containsId(stack, lkb.lock.id)))
+			if(!canUnlock(lkb, stack, player))
 			{
 				lkb.swing(20);
 				world.playSound(player, pos, LocksSoundEvents.LOCK_RATTLE, SoundSource.BLOCKS, 1f, 1f);
-				f=false;
 			}
 			player.swing(InteractionHand.MAIN_HAND);
 
-			if(!(player instanceof ServerPlayer))
-				return InteractionResult.PASS;
-			if(world.isClientSide && LocksClientConfig.DEAF_MODE.get())
-				player.displayClientMessage(LOCKED_MESSAGE, true);
-			if(player.isShiftKeyDown()&&( item == LocksItems.MASTER_KEY || (stack.is(LocksItemTags.KEYS) && LockingItem.getOrSetId(stack) == lkb.lock.id) ||(item == LocksItems.KEY_RING && KeyRingItem.containsId(stack, lkb.lock.id)))) {
-				return InteractionResult.PASS;
+			//Also very hardcoded, should fix the error where you cant open the lock without crouching.
+			if(!player.isShiftKeyDown() && hasMatchingKey(lkb, stack, player))
+			{
+				lkb.lock.setLocked(!lkb.lock.isLocked());
+				world.playSound(player, pos, LocksSoundEvents.LOCK_OPEN, SoundSource.BLOCKS, 1f, 1f);
+
+				if (!world.isClientSide) {
+					// Delay sync so swing isn't cut short immediately
+					((ServerLevel) world).getServer().execute(() -> {
+
+						// Cardinal Components sync method
+						LocksComponents.LOCKABLE_HANDLER.sync(world);
+						// Mark chunk as dirty
+						(world.getChunk(pos)).setUnsaved(true);
+					});
+				}
 			}
-			if(f) {
+
+			if(!(player instanceof ServerPlayer)) return InteractionResult.PASS;
+
+			if(world.isClientSide && LocksClientConfig.DEAF_MODE.get()) player.displayClientMessage(LOCKED_MESSAGE, true);
+
+			// Avoids rendering when it is opened with a key while standing
+			if(!lkb.isSmart() && player.isShiftKeyDown() && hasMatchingKey(lkb, stack, player)) { return InteractionResult.PASS; }
+
+
+
+			if(canUnlock(lkb,stack,player) && !hasMatchingKey(lkb, stack, player)) {
 				player.openMenu(new LockPickingContainer.Provider(hand, lkb));
 				return InteractionResult.CONSUME;
 			}
 			else
 				return InteractionResult.FAIL;
 		}
+
 		if(LocksServerConfig.ALLOW_REMOVING_LOCKS.get() && player.isShiftKeyDown() && stack.isEmpty())
 		{
 			Lockable[] match = Arrays.stream(intersect).filter(LocksPredicates.NOT_LOCKED).toArray(Lockable[]::new);
@@ -126,7 +159,37 @@ public final class LocksEvents
 				return InteractionResult.PASS;
 			}
 		}
+
 		return InteractionResult.PASS;
+	}
+
+	public static boolean canUnlock(Lockable lkb, ItemStack stack, Player player) {
+		//Checks for matching keys
+		if (hasMatchingKey(lkb, stack, player)) return true;
+
+		// Check if it's a lockpick and the lock can be lockpicked
+		if (stack.is(LocksItemTags.LOCK_PICKS) && !lkb.isSmart()) return true;
+
+		return false;
+	}
+
+	public static boolean hasMatchingKey(Lockable lkb, ItemStack stack, Player player) {
+		int lockId = lkb.lock.id;
+		Item item = stack.getItem();
+
+		// Check if it's a matching key
+		if (stack.is(LocksItemTags.KEYS) && LockingItem.getOrSetId(stack) == lockId) return true;
+
+		// Check if it's the master key
+		if (item == LocksItems.MASTER_KEY) return true;
+
+		// Check if it's a keyring containing the correct key
+		if (item == LocksItems.KEY_RING && KeyRingItem.containsId(stack, lockId)) return true;
+
+		//Checks if the player is the owner of the smart lock.
+		if (!stack.is(LocksItemTags.LOCK_PICKS) && lkb.isSmart() && SmartLockItem.getOrSetOwner(lkb.stack, player).equals(player.getUUID())) return true;
+
+		return false;
 	}
 
 

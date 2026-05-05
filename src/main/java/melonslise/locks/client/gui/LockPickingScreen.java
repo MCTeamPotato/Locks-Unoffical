@@ -34,6 +34,7 @@ import java.util.function.BiConsumer;
 public class LockPickingScreen extends AbstractContainerScreen<LockPickingContainer> {
     public static final Component HINT = Component.translatable(Locks.ID + ".gui.lockpicking.open");
 
+    //Note: Offsets and resizes
     public final TextureInfo
             FRONT_WALL_TEX = new TextureInfo(6, 0, 4, 60, 48, 80, this.lockTex),
             COLUMN_TEX = new TextureInfo(10, 0, 8, 60, 48, 80, this.lockTex),
@@ -41,7 +42,7 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
             BACK_WALL_TEX = new TextureInfo(22, 0, 4, 60, 48, 80, this.lockTex),
             HANDLE_TEX = new TextureInfo(26, 0, 19, 73, 48, 80, this.lockTex),
             UPPER_PIN_TEX = new TextureInfo(0, 0, 6, 8, 48, 80, this.lockTex),
-            LOCK_PICK_TEX = new TextureInfo(0, 0, 160, 12, 160, 16, this.pickTex);
+            LOCK_PICK_TEX = new TextureInfo(0, 0, 190, 12, 190, 16, this.pickTex);
     public final TextureInfo[] PIN_TUMBLER_TEX = new TextureInfo[]{
             new TextureInfo(0, 8, 6, 11, 48, 80, this.lockTex),
             new TextureInfo(0, 19, 6, 13, 48, 80, this.lockTex),
@@ -68,6 +69,7 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
     public final int length;
     public final boolean pins[];
     public final InteractionHand hand;
+    //private final Lockable lock;
 
     protected int currPin;
 
@@ -75,27 +77,35 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
 
     public LockPickingScreen(LockPickingContainer cont, Inventory inv, Component title) {
         super(cont, inv, title);
+        //this.lock = cont.lockable;
         this.length = cont.lockable.lock.getLength();
         this.pins = new boolean[this.length];
         this.hand = cont.hand;
-        this.lockTex = getTextureFor(cont.lockable.stack);
-        this.imageWidth = (FRONT_WALL_TEX.width + this.length * (COLUMN_TEX.width + INNER_WALL_TEX.width)) * 2;
-        this.imageHeight = HANDLE_TEX.height * 2;
-        this.sprites = new ArrayDeque<>(this.length * 3 + 4);
-        this.pinTumblers = new Sprite[this.length];
-        this.upperPins = new Sprite[this.length];
-        this.springs = new Sprite[this.length];
-        for (int a = 0; a < this.pinTumblers.length; ++a) {
-            int r = ThreadLocalRandom.current().nextInt(3);
-            this.pinTumblers[a] = this.addSprite(new Sprite(PIN_TUMBLER_TEX[r]).position(FRONT_WALL_TEX.width + 1 + a * (COLUMN_TEX.width + INNER_WALL_TEX.width), 43 - PIN_TUMBLER_TEX[r].height));
-            this.upperPins[a] = new Sprite(UPPER_PIN_TEX).position(FRONT_WALL_TEX.width + 1 + a * (COLUMN_TEX.width + INNER_WALL_TEX.width), 43 - PIN_TUMBLER_TEX[r].height - UPPER_PIN_TEX.height);
-            this.springs[a] = this.addSprite(new SpringSprite(SPRING_TEX, this.upperPins[a]).position(FRONT_WALL_TEX.width + 1 + a * (COLUMN_TEX.width + INNER_WALL_TEX.width), 3));
-            this.addSprite(this.upperPins[a]);
+
+        //skip rendering sprites for the unlockpickable locks
+        if(!cont.lockable.isSmart())
+        {
+            this.lockTex = getTextureFor(cont.lockable.stack);
+            this.imageWidth = (FRONT_WALL_TEX.width + this.length * (COLUMN_TEX.width + INNER_WALL_TEX.width)) * 2;
+            this.imageHeight = HANDLE_TEX.height * 2;
+            this.sprites = new ArrayDeque<>(this.length * 3 + 4);
+            this.pinTumblers = new Sprite[this.length];
+            this.upperPins = new Sprite[this.length];
+            this.springs = new Sprite[this.length];
+            for (int a = 0; a < this.pinTumblers.length; ++a) {
+                int r = ThreadLocalRandom.current().nextInt(3);
+                this.pinTumblers[a] = this.addSprite(new Sprite(PIN_TUMBLER_TEX[r]).position(FRONT_WALL_TEX.width + 1 + a * (COLUMN_TEX.width + INNER_WALL_TEX.width), 43 - PIN_TUMBLER_TEX[r].height));
+                this.upperPins[a] = new Sprite(UPPER_PIN_TEX).position(FRONT_WALL_TEX.width + 1 + a * (COLUMN_TEX.width + INNER_WALL_TEX.width), 43 - PIN_TUMBLER_TEX[r].height - UPPER_PIN_TEX.height);
+                this.springs[a] = this.addSprite(new SpringSprite(SPRING_TEX, this.upperPins[a]).position(FRONT_WALL_TEX.width + 1 + a * (COLUMN_TEX.width + INNER_WALL_TEX.width), 3));
+                this.addSprite(this.upperPins[a]);
+            }
+            this.lockPick = this.addSprite(new Sprite(LOCK_PICK_TEX).position(0f, -4 + COLUMN_TEX.height - LOCK_PICK_TEX.height));
+            this.resetPick();
+
+            //Broken Lock pick offsets and resize
+            this.rightPickPart = this.addSprite(new Sprite(new TextureInfo(0, 0, 0, 12, 193, 16, this.pickTex)).position(-10f, this.lockPick.posY).alpha(0f));
+            this.leftPickPart = this.addSprite(new Sprite(new TextureInfo(0, 0, 0, 12, 195, 16, this.pickTex)).position(0f, this.lockPick.posY).rotation(-24.5f, -10f, this.lockPick.posY + 13f).alpha(0f));
         }
-        this.lockPick = this.addSprite(new Sprite(LOCK_PICK_TEX).position(0f, -4 + COLUMN_TEX.height - LOCK_PICK_TEX.height));
-        this.resetPick();
-        this.rightPickPart = this.addSprite(new Sprite(new TextureInfo(0, 0, 0, 12, 160, 16, this.pickTex)).position(-10f, this.lockPick.posY).alpha(0f));
-        this.leftPickPart = this.addSprite(new Sprite(new TextureInfo(0, 0, 0, 12, 160, 16, this.pickTex)).position(0f, this.lockPick.posY).rotation(-24.5f, -10f, this.lockPick.posY + 13f).alpha(0f));
     }
 
     public static ResourceLocation getTextureFor(ItemStack stack) {
@@ -125,36 +135,39 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
 
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        float pt = this.minecraft.getFrameTime(); // idk why, but partialTick looks laggy AF... Use getFrameTime instead!
-        int cornerX = (this.width - this.imageWidth) / 2;
-        int cornerY = (this.height - this.imageHeight) / 2;
+        //if(!this.lock.isSmart())
+        //{
+            float pt = this.minecraft.getFrameTime(); // idk why, but partialTick looks laggy AF... Use getFrameTime instead!
+            int cornerX = (this.width - this.imageWidth) / 2;
+            int cornerY = (this.height - this.imageHeight) / 2;
 
-        //this.minecraft.getTextureManager().bindForSetup(this.lockTex);
-        PoseStack mtx = guiGraphics.pose();
-        mtx.pushPose();
-        mtx.translate(cornerX, cornerY, 0f);
-        mtx.scale(2f, 2f, 2f);
-        FRONT_WALL_TEX.draw(guiGraphics, 0f, 0f, 1f, this.lockTex);
+            //this.minecraft.getTextureManager().bindForSetup(this.lockTex);
+            PoseStack mtx = guiGraphics.pose();
+            mtx.pushPose();
+            mtx.translate(cornerX, cornerY, 0f);
+            mtx.scale(2f, 2f, 2f);
+            FRONT_WALL_TEX.draw(guiGraphics, 0f, 0f, 1f, this.lockTex);
 
-        for (int a = 0; a < this.length; ++a) {
-            COLUMN_TEX.draw(guiGraphics, FRONT_WALL_TEX.width + a * (COLUMN_TEX.width + INNER_WALL_TEX.width), 0f, 1f, this.lockTex);
-            if (a != this.length - 1)
-                INNER_WALL_TEX.draw(guiGraphics, FRONT_WALL_TEX.width + COLUMN_TEX.width + a * (COLUMN_TEX.width + INNER_WALL_TEX.width), 0f, 1f, this.lockTex);
-        }
-        BACK_WALL_TEX.draw(guiGraphics, this.length * (COLUMN_TEX.width + INNER_WALL_TEX.width), 0f, 1f, this.lockTex);
-        HANDLE_TEX.draw(guiGraphics, BACK_WALL_TEX.width + this.length * (COLUMN_TEX.width + INNER_WALL_TEX.width), 2f, 1f, this.lockTex);
-        // FIXME right way??
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-        for (Sprite sprite : this.sprites) {
-            //if (sprite == this.lockPick) this.minecraft.getTextureManager().bindForSetup(this.pickTex); // FIXME fucking terrible
-            if (sprite == this.lockPick || sprite == this.rightPickPart || sprite == this.leftPickPart){
-                sprite.draw(guiGraphics, pt, this.pickTex);
-            } else {
-                sprite.draw(guiGraphics, pt, this.lockTex);
+            for (int a = 0; a < this.length; ++a) {
+                COLUMN_TEX.draw(guiGraphics, FRONT_WALL_TEX.width + a * (COLUMN_TEX.width + INNER_WALL_TEX.width), 0f, 1f, this.lockTex);
+                if (a != this.length - 1)
+                    INNER_WALL_TEX.draw(guiGraphics, FRONT_WALL_TEX.width + COLUMN_TEX.width + a * (COLUMN_TEX.width + INNER_WALL_TEX.width), 0f, 1f, this.lockTex);
             }
-        }
-        mtx.popPose();
+            BACK_WALL_TEX.draw(guiGraphics, this.length * (COLUMN_TEX.width + INNER_WALL_TEX.width), 0f, 1f, this.lockTex);
+            HANDLE_TEX.draw(guiGraphics, BACK_WALL_TEX.width + this.length * (COLUMN_TEX.width + INNER_WALL_TEX.width), 2f, 1f, this.lockTex);
+            // FIXME right way??
+            RenderSystem.enableBlend();
+            RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+            for (Sprite sprite : this.sprites) {
+                //if (sprite == this.lockPick) this.minecraft.getTextureManager().bindForSetup(this.pickTex); // FIXME fucking terrible
+                if (sprite == this.lockPick || sprite == this.rightPickPart || sprite == this.leftPickPart){
+                    sprite.draw(guiGraphics, pt, this.pickTex);
+                } else {
+                    sprite.draw(guiGraphics, pt, this.lockTex);
+                }
+            }
+            mtx.popPose();
+        //}
     }
 
     @Override
@@ -167,10 +180,13 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
     @Override
     public void containerTick() {
         super.containerTick();
-        for (Sprite sprite : this.sprites)
-            sprite.update();
-        if (!this.frozen)
-            this.boundLockPick();
+        //if(!this.lock.isSmart())
+        //{
+            for (Sprite sprite : this.sprites)
+                sprite.update();
+            if (!this.frozen)
+                this.boundLockPick();
+        //}
         this.updatePickParts();
     }
 

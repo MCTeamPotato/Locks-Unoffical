@@ -4,6 +4,7 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "locks.refmap.json",
   "mixins": [
+    "BlockEntityMixin",
     "ChestBlockMixin",
     "ChunkManagerMixin",
     "ChunkMixin",
@@ -19,11 +20,15 @@
     "RandomizableContainerBlockEntityMixin",
     "ServerWorldMixin",
     "WorldMixin",
+    "AnvilMenuMixin",
     "accessor.LootPoolAccessor",
     "accessor.LootTableAccessor",
+    "accessor.RandomizableContainerAccessor",
     "addlock.StructurePieceMixin",
     "addlock.StructureTemplateMixin",
-    "addlock.WorldGenRegionMixin"
+    "addlock.WorldGenRegionMixin",
+    "addlock.TemplateStructurePieceMixin"
+
   ],
   "client": [
     "ChunkCacheMixin",

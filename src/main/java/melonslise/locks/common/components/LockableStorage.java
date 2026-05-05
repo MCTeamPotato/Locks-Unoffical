@@ -14,6 +14,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 
+//Shit is required to save the world file.
+import net.minecraft.nbt.Tag;
+
 import java.util.Objects;
 
 /*
@@ -55,8 +58,8 @@ public class LockableStorage implements ILockableStorage
 
 	@Override
 	public void readFromNbt(CompoundTag nbt) {
-		int size = nbt.getInt("LockablesSize");
-		ListTag lockables = nbt.getList("Lockables",size);
+		int size = nbt.getInt("LockablesSize"); //Not really used anymore since it didn't save locks into worldfile
+		ListTag lockables = nbt.getList("Lockables", Tag.TAG_COMPOUND);
 		ILockableHandler handler;
 		if(this.chunk instanceof LevelChunk levelChunk){
 			handler =LocksComponents.LOCKABLE_HANDLER.get(levelChunk.getLevel());

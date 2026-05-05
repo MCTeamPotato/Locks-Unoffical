@@ -1,0 +1,16 @@
+{
+	"type": "minecraft:smithing_transform",
+	"template": {
+		"item": "minecraft:netherite_upgrade_smithing_template"
+	},
+	"base": {
+		"item": "locks:diamond_lock_pick"
+	},
+	"addition": {
+		"item": "minecraft:netherite_ingot"
+	},
+	"result": {
+		"item": "locks:netherite_lock_pick",
+		"count": 3
+	}
+}

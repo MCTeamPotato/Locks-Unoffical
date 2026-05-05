@@ -5,7 +5,7 @@
 	"name": "Locks",
 	"description": "Locks is a small, but unique Minecraft mod that introduces flexible and universal locks which can be dynamically attached to multiple blocks of any kind, including other mods, a fun lock picking mechanic as well as lots of other little, but useful tools and utilities.",
 	"authors": [
-		"Melonslise", "Kaleb Langley", "Yuqi154"
+		"Melonslise", "Kaleb Langley", "Yuqi154", "Parakoh"
 	],
 	"icon": "icon.png",
 	"accessWidener" : "locks.accesswidener",
@@ -22,9 +22,9 @@
 		"client": [
 			"melonslise.locks.LocksClient"
 		],
-		"cardinal-components": [
-			"melonslise.locks.common.init.LocksComponents"
-		]
+		"cardinal-components": ["melonslise.locks.common.init.LocksComponents"],
+		"jei_mod_plugin": ["melonslise.locks.compat.jei.LocksJeiPlugin"],
+		"rei_client": ["melonslise.locks.compat.rei.LocksReiPlugin"]
 	},
 	"mixins": [
       "locks.mixins.json",
@@ -42,8 +42,13 @@
 		"cardinal-components-world": ">=5.2.2",
 		"cardinal-components-chunk": ">=5.2.2"
 	},
+	"optional": [
+		"roughlyenoughitems",
+		"jei"
+	],
 	"suggests": {
-		"jei": ">15.17.0.0"
+		"jei": ">=15.17.0.0",
+		"rei": ">=12.0.613"
 	},
 	"custom": {
 		"cardinal-components": [

@@ -10,11 +10,11 @@
 	{
 		"D":
 		{
-			"tag": "c:gems/diamond"
+			"tag": "c:diamonds"
 		},
 		"L":
 		{
-			"item": "locks:iron_lock_mechanism"
+			"item": "locks:steel_lock_mechanism"
 		}
 	},
 	"result":

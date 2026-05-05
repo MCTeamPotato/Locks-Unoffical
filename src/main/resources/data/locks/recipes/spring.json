@@ -10,11 +10,12 @@
 	{
 		"N":
 		{
-			"tag": "c:nuggets/iron"
+			"item": "minecraft:iron_nugget"
 		}
 	},
 	"result":
 	{
-		"item": "locks:spring"
+		"item": "locks:spring",
+		"count": 1
 	}
 }

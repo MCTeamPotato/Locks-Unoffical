@@ -1,0 +1,21 @@
+{
+	"type": "minecraft:crafting_shapeless",
+	"ingredients":[
+		{
+			"item": "locks:diamond_lock_fragments"
+		},
+		{
+			"item": "locks:diamond_lock_fragments"
+		},
+		{
+			"item": "locks:diamond_lock_fragments"
+		},
+		{
+			"item": "locks:diamond_lock_fragments"
+		}],
+	"result":
+	{
+		"item": "minecraft:diamond",
+		"count": 1
+	}
+}

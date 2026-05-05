@@ -4,5 +4,10 @@
 The source code for Locks, a small, but unique Minecraft mod that introduces flexible and universal locks which can be dynamically attached to multiple blocks of any kind, including other mods, a fun lock picking mechanic as well as lots of other little, but useful tools and utilities.
 
 ## Links
-CurseForge: https://www.curseforge.com/minecraft/mc-mods/locks-unoffical  
+` Locks Unofficial :` https://www.curseforge.com/minecraft/mc-mods/locks-unoffical  
 
+    -                                                                               -
+
+` Locks Reforked (Curseforge) :` https://www.curseforge.com/minecraft/mc-mods/locks-reforked
+
+` Locks Unofficial (Modrinth) :` https://modrinth.com/mod/locks-reforked

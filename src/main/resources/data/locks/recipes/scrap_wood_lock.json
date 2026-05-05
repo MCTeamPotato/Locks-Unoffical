@@ -1,0 +1,12 @@
+{
+	"type": "minecraft:crafting_shapeless",
+	"ingredients":[
+	{
+		"item": "locks:wood_lock"
+	}],
+	"result":
+	{
+		"item": "minecraft:oak_planks",
+		"count": 1
+	}
+}

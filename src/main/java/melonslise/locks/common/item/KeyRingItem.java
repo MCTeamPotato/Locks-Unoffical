@@ -1,8 +1,10 @@
 package melonslise.locks.common.item;
 
-import melonslise.locks.common.components.interfaces.IItemHandler;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import melonslise.locks.common.container.KeyRingContainer;
-import melonslise.locks.common.init.LocksComponents;
+import melonslise.locks.common.container.KeyRingInventory;
 import melonslise.locks.common.init.LocksSoundEvents;
 import melonslise.locks.common.util.Lockable;
 import melonslise.locks.common.util.LocksUtil;
@@ -18,9 +20,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class KeyRingItem extends Item
 {
 	public final int rows;
@@ -31,15 +30,33 @@ public class KeyRingItem extends Item
 		this.rows = rows;
 	}
 
+	/**
+	 * Checks if the ring has a key that matches the given id. (used for some LockEvent hard coded method)
+	 * @param stack - Current keyring in mainhand
+	 * @param id - Lock Pattern id
+	 * @return - Whether it matches or not
+	 */
 	public static boolean containsId(ItemStack stack, int id)
 	{
-		IItemHandler inv = LocksComponents.ITEM_HANDLER.get(stack);
-		for(int a = 0; a < inv.getSlots(); ++a)
-			if(LockingItem.getOrSetId(inv.getStackInSlot(a)) == id)
+		//IItemHandler inv = LocksComponents.ITEM_HANDLER.get(stack);
+		KeyRingInventory ring = new KeyRingInventory(stack, 9);
+		ring.fromTag(stack.getOrCreateTag());
+
+		for(int a = 0; a < ring.getContainerSize(); ++a)
+			if(LockingItem.getOrSetId(ring.getItem(a)) == id)
 				return true;
 		return false;
 	}
 
+
+	/**
+	 * Provides key ring menu to the player.
+	 *
+	 * @param world - Level.
+	 * @param player - Specific player in the server
+	 * @param hand - The item in hand
+	 * @return - wuierd thing
+	 */
 	@Override
 	public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand)
 	{
@@ -47,32 +64,60 @@ public class KeyRingItem extends Item
 		if(player instanceof ServerPlayer serverPlayer){
 			serverPlayer.openMenu(new KeyRingContainer.Provider(stack));
 		}
-//			NetworkHooks.openScreen((ServerPlayer) player, new KeyRingContainer.Provider(stack), new KeyRingContainer.Writer(hand));
+		//	NetworkHooks.openScreen((ServerPlayer) player, new KeyRingContainer.Provider(stack), new KeyRingContainer.Writer(hand));
 		return new InteractionResultHolder<>(InteractionResult.PASS, stack);
 	}
 
+	/**
+	 * Checks if the keys in your ring can open a chest.
+	 *
+	 * @param ctx - context to the player's action
+	 * @return - Result of interaction.
+	 */
 	@Override
 	public InteractionResult useOn(UseOnContext ctx)
 	{
 		Level world = ctx.getLevel();
 		BlockPos pos = ctx.getClickedPos();
-		IItemHandler inv = LocksComponents.ITEM_HANDLER.get(ctx.getItemInHand());
+		ItemStack stack = ctx.getItemInHand();
+		//IItemHandler inv = LocksComponents.ITEM_HANDLER.get(ctx.getItemInHand());
+
+		//Gets the lock and the keys in the ring.
+		KeyRingInventory ring = new KeyRingInventory(stack, 9);
 		List<Lockable> intersect = LocksUtil.intersecting(world, pos).collect(Collectors.toList());
-		if(intersect.isEmpty())
-			return InteractionResult.PASS;
-		for(int a = 0; a < inv.getSlots(); ++a)
+		ring.fromTag(stack.getOrCreateTag());
+
+		if(intersect.isEmpty() || ring.isEmpty()) return InteractionResult.PASS;
+
+		for(int a = 0; a < ring.getContainerSize(); ++a)
 		{
-			int id = LockingItem.getOrSetId(inv.getStackInSlot(a));
-			List<Lockable> match = intersect.stream().filter(lkb -> lkb.lock.id == id).collect(Collectors.toList());
-			if(match.isEmpty())
-				continue;
+			//Gets id from the key in inventory, checks if the lock matches the key and if so stores it into the "match" List.
+			int id = LockingItem.getOrSetId(ring.getItem(a));
+			List<Lockable> match = LocksUtil.intersecting(world, pos).filter(lkb -> lkb.lock.id == id).collect(Collectors.toList());
+			if(match.isEmpty()) continue;
+
 			world.playSound(ctx.getPlayer(), pos, LocksSoundEvents.LOCK_OPEN, SoundSource.BLOCKS, 1f, 1f);
-			if(world.isClientSide)
-				return InteractionResult.SUCCESS;
-			for(Lockable lkb : match)
+
+			/*if(world.isClientSide)
+				return InteractionResult.SUCCESS;*/
+			for(Lockable lkb : match) {
 				lkb.lock.setLocked(!lkb.lock.isLocked());
+				//Locks.LOGGER.warn(lkb.lock.isLocked());
+			}
 			return InteractionResult.SUCCESS;
 		}
 		return InteractionResult.SUCCESS;
+	}
+
+	/**
+	 * Gets the amount of keys (max is 3) in the ring. used for texture updates
+	 * @param stack - ring being held
+	 * @return - amount of keys
+	 */
+	public float getKeyCount(ItemStack stack) {
+		KeyRingInventory inv = new KeyRingInventory(stack, 9);
+		inv.fromTag(stack.getOrCreateTag());
+
+		return inv.getKeyCount(stack);
 	}
 }

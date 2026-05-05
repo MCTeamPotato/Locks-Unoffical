@@ -1,6 +1,8 @@
 package melonslise.locks.common.container;
 
+import melonslise.locks.Locks;
 import melonslise.locks.common.components.interfaces.IItemHandler;
+import melonslise.locks.common.container.KeyRingInventory;
 import melonslise.locks.common.init.LocksComponents;
 import melonslise.locks.common.init.LocksContainerTypes;
 import melonslise.locks.common.init.LocksSoundEvents;
@@ -16,6 +18,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
+import melonslise.locks.common.init.LocksItems;
+import java.util.function.Predicate;
+
+import net.minecraft.world.inventory.MenuType;
 
 import java.util.function.Consumer;
 
@@ -24,11 +31,18 @@ public class KeyRingContainer extends AbstractContainerMenu
 	public static class KeyRingSlot extends Slot
 	{
 		public final Player player;
+		private final Item allowedItem;
 
-		public KeyRingSlot(Player player, IItemHandler inv, int index, int x, int y)
+		public KeyRingSlot(KeyRingInventory container, Item allowedItem, Player player, int index, int x, int y)
 		{
-			super(inv, index, x, y);
+			super(container, index, x, y);
 			this.player = player;
+			this.allowedItem = allowedItem;
+		}
+
+		@Override
+		public boolean mayPlace(ItemStack stack) {
+			return stack.getItem() == allowedItem;
 		}
 
 		// TODO PITCH
@@ -49,26 +63,41 @@ public class KeyRingContainer extends AbstractContainerMenu
 		}
 	}
 
+
+
 	public final ItemStack stack;
 	public final IItemHandler inv;
 	public final int rows;
+	public final KeyRingInventory container;
 
 	public KeyRingContainer(int id, Player player, ItemStack stack)
 	{
 		super(LocksContainerTypes.KEY_RING, id);
 		this.stack = stack;
 		this.inv = LocksComponents.ITEM_HANDLER.get(stack);
+		this.rows = 1;
+		container = new KeyRingInventory(stack, 9);
 
-		this.rows = inv.getSlots() / 9;
-		for(int row = 0; row < rows; ++row)
-			for(int col = 0; col < 9; ++col)
-				this.addSlot(new KeyRingSlot(player, inv, col + row * 9, 8 + col * 18, 18 + row * 18));
+		//this.rows = inv.getSlots() / 9;
+		for(int row = 0; row < rows; row++)
+			for(int col = 0; col < 9; col++)
+				this.addSlot(new KeyRingSlot(container, LocksItems.KEY, player, col + row * 9, 8 + col * 18, 18 + row * 18));
 
+		/*
+		Same thing but with regular chest slots
+		for(int row  = 0; row < this.rows; ++row) {
+			for(int col = 0; col < 9; ++col) {
+				this.addSlot(new Slot(container, col + row * 9, 8 + col * 18, 18 + row * 18));
+			}
+		}*/
+
+		//Gets players inventory and displays it
 		int offset = (rows - 4) * 18;
 		for(int row = 0; row < 3; ++row)
 			for (int col = 0; col < 9; ++col)
 				this.addSlot(new Slot(player.getInventory(), col + row * 9 + 9, 8 + col * 18, 103 + row * 18 + offset));
 
+		//Gets player's hotbar and displays it
 		for(int coll = 0; coll < 9; ++coll)
 			this.addSlot(new Slot(player.getInventory(), coll, 8 + coll * 18, 161 + offset));
 	}
@@ -79,7 +108,7 @@ public class KeyRingContainer extends AbstractContainerMenu
 		return !this.stack.isEmpty();
 	}
 
-	@Override
+	/*@Override
 	public ItemStack quickMoveStack(Player player, int index)
 	{
 		ItemStack stack = ItemStack.EMPTY;
@@ -100,6 +129,40 @@ public class KeyRingContainer extends AbstractContainerMenu
 		else
 			slot.setChanged();
 		return stack;
+	}*/
+
+	@Override
+	public ItemStack quickMoveStack(Player player, int index) {
+		Slot slot = this.slots.get(index);
+		if (slot != null && slot.hasItem()) {
+			ItemStack originalStack = slot.getItem();
+			ItemStack copy = originalStack.copy();
+
+			// Custom inventory size (e.g., 9 slots)
+			int containerSlotCount = 9;
+
+			if (index < containerSlotCount) {
+				// From container to player inventory
+				if (!this.moveItemStackTo(originalStack, containerSlotCount, this.slots.size(), true)) {
+					return ItemStack.EMPTY;
+				}
+			} else {
+				// From player inventory to container
+				if (!this.moveItemStackTo(originalStack, 0, containerSlotCount, false)) {
+					return ItemStack.EMPTY;
+				}
+			}
+
+			if (originalStack.isEmpty()) {
+				slot.set(ItemStack.EMPTY);
+			} else {
+				slot.setChanged();
+			}
+
+			return copy;
+		}
+
+		return ItemStack.EMPTY;
 	}
 
 	public static final ExtendedScreenHandlerType.ExtendedFactory<KeyRingContainer> FACTORY = (id, inv, buffer) ->

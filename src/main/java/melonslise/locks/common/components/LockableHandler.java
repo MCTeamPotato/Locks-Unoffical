@@ -19,6 +19,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
 
+//Shit is required to save the world file.
+import net.minecraft.nbt.Tag;
+
 import java.util.List;
 import java.util.Observable;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -107,6 +110,7 @@ public class LockableHandler implements ILockableHandler {
         // Remove from world
         this.lockables.remove(id);
         lkb.deleteObserver(this);
+
         // Do client/server extras
         if(this.world.isClientSide)
             return true;
@@ -131,8 +135,8 @@ public class LockableHandler implements ILockableHandler {
     @Override
     public void readFromNbt(CompoundTag compoundTag) {
         this.lastId.set(compoundTag.getInt("last_id"));
-        int size = compoundTag.getInt("LockablesSize");
-        ListTag lockables = compoundTag.getList("Lockables",size);
+        int size = compoundTag.getInt("LockablesSize"); //Not really used anymore since it didn't save locks into worldfile.
+        ListTag lockables = compoundTag.getList("Lockables", Tag.TAG_COMPOUND);
         for(int a = 0; a < lockables.size(); ++a)
         {
             CompoundTag nbt1 = lockables.getCompound(a);
@@ -150,5 +154,10 @@ public class LockableHandler implements ILockableHandler {
             list.add(Lockable.toNbt(lkb));
         compoundTag.put("Lockables", list);
         compoundTag.putInt("LockablesSize", this.lockables.size());
+    }
+
+    public void sync()
+    {
+
     }
 }

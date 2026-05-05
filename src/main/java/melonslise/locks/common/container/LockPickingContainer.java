@@ -83,7 +83,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 
 	public boolean isValidPick(ItemStack stack)
 	{
-		return stack.is(LocksItemTags.LOCK_PICKS) && LockPickItem.canPick(stack, this.complexity);
+		return stack.is(LocksItemTags.LOCK_PICKS) && LockPickItem.canPick(stack, this.complexity) && !this.lockable.isSmart();
 	}
 
 	@Override

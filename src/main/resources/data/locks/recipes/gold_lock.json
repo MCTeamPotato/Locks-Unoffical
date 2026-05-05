@@ -10,11 +10,11 @@
 	{
 		"G":
 		{
-			"tag": "c:ingots/gold"
+			"tag": "c:gold_ingots"
 		},
 		"L":
 		{
-			"item": "locks:iron_lock_mechanism"
+			"item": "locks:steel_lock_mechanism"
 		}
 	},
 	"result":

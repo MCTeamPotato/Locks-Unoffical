@@ -22,6 +22,7 @@ public enum Transform
 	EAST_DOWN(Direction.EAST, AttachFace.FLOOR);
 
 	public static final HashMap<Pair<Direction, AttachFace>, Transform> LOOKUP = new HashMap<>(16); // 12 / 0.75
+	public static Transform NONE;
 
 	static
 	{
