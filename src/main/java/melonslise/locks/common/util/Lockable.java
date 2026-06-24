@@ -19,6 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.*;
+import java.util.Objects;
 
 public class Lockable extends Observable implements Observer
 {
@@ -87,7 +88,7 @@ public class Lockable extends Observable implements Observer
 	{
 		this.bb = bb;
 		this.lock = lock;
-		this.tr = tr;
+		this.tr = Objects.requireNonNull(tr);
 		this.stack = stack;
 		this.id = id;
 		lock.addObserver(this);
@@ -105,7 +106,7 @@ public class Lockable extends Observable implements Observer
 		CompoundTag nbt = new CompoundTag();
 		nbt.put(KEY_BB, Cuboid6i.toNbt(lkb.bb));
 		nbt.put(KEY_LOCK, Lock.toNbt(lkb.lock));
-		nbt.putByte(KEY_TRANSFORM, (byte) lkb.tr.ordinal());
+		nbt.putByte(KEY_TRANSFORM, (byte) (lkb.tr != null ? lkb.tr.ordinal() : 0));
 		nbt.put(KEY_STACK, lkb.stack.save(new CompoundTag()));
 		nbt.putInt(KEY_ID, lkb.id);
 		return nbt;

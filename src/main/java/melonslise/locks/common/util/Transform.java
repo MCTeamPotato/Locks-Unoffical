@@ -45,7 +45,8 @@ public enum Transform
 
 	public static Transform fromDirectionAndFace(Direction dir, AttachFace face, Direction def)
 	{
-		return LOOKUP.get(Pair.of(dir.getAxis() == Direction.Axis.Y ? def : dir, face));
+		Transform result = LOOKUP.get(Pair.of(dir.getAxis() == Direction.Axis.Y ? def : dir, face));
+		return result != null ? result : NORTH_UP;
 	}
 
 	public static Transform fromDirection(Direction dir, Direction def)
