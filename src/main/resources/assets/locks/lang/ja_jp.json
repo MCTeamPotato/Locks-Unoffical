@@ -1,0 +1,53 @@
+{
+	"language.locks.translation_author": "Koronteto(Hiro2627)",
+  	"_comment":"1.2.4 Forge-1.20.1",
+
+	"itemGroup.locks": "Locks",
+
+	"item.locks.spring": "バネ",
+	"item.locks.wood_lock_mechanism": "木のロック機構",
+	"item.locks.iron_lock_mechanism": "鉄のロック機構",
+	"item.locks.steel_lock_mechanism": "鋼のロック機構",
+	"item.locks.wood_lock": "木の南京錠",
+	"item.locks.iron_lock": "鉄の南京錠",
+	"item.locks.steel_lock": "鋼の南京錠",
+	"item.locks.gold_lock": "金の南京錠",
+	"item.locks.diamond_lock": "ダイヤモンドの南京錠",
+	"item.locks.wood_lock_pick": "ヘアピンのロックピック",
+	"item.locks.iron_lock_pick": "鉄のロックピック",
+	"item.locks.steel_lock_pick": "鋼のロックピック",
+	"item.locks.gold_lock_pick": "金のロックピック",
+	"item.locks.diamond_lock_pick": "ダイヤモンドのロックピック",
+	"item.locks.key": "カギ",
+	"item.locks.master_key": "マスターキー",
+	"item.locks.key_blank": "ブランクキー",
+	"item.locks.key_ring": "キーリング",
+
+	"enchantment.locks.shocking": "電撃",
+	"enchantment.locks.shocking.desc": "ピッキングに失敗した泥棒を感電させます",
+	"enchantment.locks.sturdy": "頑丈",
+	"enchantment.locks.sturdy.desc": "ロックピックの強度を低下させます",
+	"enchantment.locks.complexity": "複雑化",
+	"enchantment.locks.complexity.desc": "ティアの低いロックピックでピッキングできないように南京錠を複雑にします",
+
+	"death.attack.locks.shock": "%1$sはエンチャントされた南京錠のピッキングに失敗して感電した",
+	"death.attack.locks.shock.player": "%1$sは%2$sと戦いながらエンチャントされた南京錠で感電した",
+
+	"locks.gui.lockpicking.title": "南京錠のピッキング",
+	"locks.gui.lockpicking.open": "ESCを押して開く",
+
+	"locks.subtitle.key_ring": "カギがジャラジャラと鳴る",
+	"locks.subtitle.lock.close": "南京錠がカチッと鳴る",
+	"locks.subtitle.lock.open": "カギが南京錠で回る",
+	"locks.subtitle.lock.rattle": "南京錠がジャラジャラと鳴る",
+	"locks.subtitle.pin.fail": "ピンがカチッと空回りする",
+	"locks.subtitle.pin.match": "ピンがカチッと噛み合う",
+	"locks.subtitle.shock": "突然の電撃",
+
+	"locks.tooltip.id": "ID: %s",
+	"locks.tooltip.length":  "ピンの数: %s",
+	"locks.tooltip.strength": "強度: %s",
+
+	"locks.status.locked": "このブロックはロックされています",
+	"locks.status.too_complex": "このロックピックで開けるには、南京錠が複雑すぎます"
+}
